@@ -8,7 +8,7 @@ class DelayedJobWeb < Sinatra::Base
   set :static, true
   set :public_folder,  File.expand_path('../public', __FILE__)
   set :views,  File.expand_path('../views', __FILE__)
-  
+
   before do
     @queues = (params[:queues] || "").split(",").map{|queue| queue.strip}.uniq.compact
   end
@@ -24,13 +24,18 @@ class DelayedJobWeb < Sinatra::Base
   def per_page
     20
   end
-  
+
   def url_path(*path_parts)
     url = [ path_prefix, path_parts ].join("/").squeeze('/')
     url += "?queues=#{@queues.join(",")}" unless @queues.empty?
     url
   end
- alias_method :u, :url_path
+
+  alias_method :u, :url_path
+
+  def h(text)
+    Rack::Utils.escape_html(text)
+  end
 
   def path_prefix
     request.env['SCRIPT_NAME']
@@ -109,7 +114,7 @@ class DelayedJobWeb < Sinatra::Base
 
   def delayed_job_sql(type, queues = [])
     conditions = []
-    
+
     conditions << case type
     when :working
       'locked_at is not null'
@@ -118,9 +123,9 @@ class DelayedJobWeb < Sinatra::Base
     when :pending
       'attempts = 0'
     end
-    
+
     conditions << "queue IN ('#{queues.join("','")}')" unless queues.empty?
-    
+
     conditions.compact.join(" AND ")
   end
 
